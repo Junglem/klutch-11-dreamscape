@@ -65,18 +65,6 @@ void KLUTCH11DREAMSCAPEAudioProcessor::prepareToPlay(
     double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
-
-    juce::dsp::ProcessSpec spec;
-    spec.sampleRate = sampleRate;
-    spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
-    spec.numChannels = static_cast<juce::uint32>(getTotalNumOutputChannels());
-
-    reverb.reset();
-    chorus.reset();
-    delayLine.reset();
-
-    reverb.prepare(spec);
-    chorus.prepare(spec);
     delayLine.prepare(spec);
 
     delayLine.setMaximumDelayInSamples(
