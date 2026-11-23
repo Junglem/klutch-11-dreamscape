@@ -60,8 +60,40 @@ layout.add(std::make_unique<AudioParameterFloat>(
 return layout;
 }
 
+
 void KLUTCH11DREAMSCAPEAudioProcessor::prepareToPlay(
     double sampleRate, int samplesPerBlock)
+{
+    currentSampleRate = sampleRate;
+
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = static_cast<juce::uint32>(samplesPerBlock);
+    spec.numChannels = static_cast<juce::uint32>(getTotalNumOutputChannels());
+
+    reverb.reset();
+    chorus.reset();
+    delayLine.reset();
+
+    reverb.prepare(spec);
+    chorus.prepare(spec);
+    delayLine.prepare(spec);
+
+    delayLine.setMaximumDelayInSamples(
+        static_cast<int>(sampleRate * 2.0));
+
+    delayLine.setDelay(static_cast<float>(sampleRate * 0.35));
+
+    for (auto& filter : toneFilters)
+    {
+        filter.reset();
+        filter.coefficients =
+            juce::dsp::IIR::Coefficients<float>::makeLowPass(
+                sampleRate, 18000.0f);
+        filter.prepare(spec);
+    }
+}
+
 {
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
