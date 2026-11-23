@@ -110,7 +110,155 @@ void KLUTCH11DREAMSCAPEAudioProcessor::releaseResources()
 {
 }
 
+
 void KLUTCH11DREAMSCAPEAudioProcessor::processBlock(
+    juce::AudioBuffer<float>& buffer,
+    juce::MidiBuffer& midiMessages)
+{
+    juce::ignoreUnused(midiMessages);
+
+    juce::ScopedNoDenormals noDenormals;
+
+    const int numChannels = buffer.getNumChannels();
+    const int numSamples = buffer.getNumSamples();
+
+    if (numChannels == 0)
+        return;
+
+    const int mode = juce::roundToInt(
+        parameters.getRawParameterValue("MODE")->load() * 2.0f);
+
+    const float dream = parameters.getRawParameterValue("DREAM")->load();
+    const float space = parameters.getRawParameterValue("SPACE")->load();
+    const float shimmer = parameters.getRawParameterValue("SHIMMER")->load();
+    const float width = parameters.getRawParameterValue("WIDTH")->load();
+    const float motion = parameters.getRawParameterValue("MOTION")->load();
+    const float echo = parameters.getRawParameterValue("ECHO")->load();
+    const float filter = parameters.getRawParameterValue("FILTER")->load();
+    const float mix = parameters.getRawParameterValue("MIX")->load();
+
+    juce::AudioBuffer<float> dryBuffer;
+    dryBuffer.makeCopyOf(buffer);
+
+    juce::AudioBuffer<float> wetBuffer;
+    wetBuffer.makeCopyOf(buffer);
+
+    juce::dsp::Reverb::Parameters reverbParams;
+
+    if (mode == 0) // HEAVEN
+    {
+        reverbParams.roomSize = 0.95f;
+        reverbParams.damping = 0.15f;
+        reverbParams.wetLevel = 0.65f;
+        reverbParams.dryLevel = 0.0f;
+        reverbParams.width = 1.0f;
+        reverbParams.freezeMode = 0.0f;
+    }
+    else if (mode == 1) // AFTERLIFE
+    {
+        reverbParams.roomSize = 0.72f;
+        reverbParams.damping = 0.85f;
+        reverbParams.wetLevel = 0.60f;
+        reverbParams.dryLevel = 0.0f;
+        reverbParams.width = 0.85f;
+        reverbParams.freezeMode = 0.0f;
+    }
+    else // CLOUD 11
+    {
+        reverbParams.roomSize = 0.90f;
+        reverbParams.damping = 0.35f;
+        reverbParams.wetLevel = 0.65f;
+        reverbParams.dryLevel = 0.0f;
+        reverbParams.width = 1.0f;
+        reverbParams.freezeMode = 0.0f;
+    }
+
+    reverbParams.roomSize = juce::jlimit(
+        0.1f, 0.98f, reverbParams.roomSize * (0.7f + space * 0.3f));
+
+    reverb.setParameters(reverbParams);
+
+    if (mode == 0)
+    {
+        chorus.setRate(0.25f + motion * 0.7f);
+        chorus.setDepth(0.25f + shimmer * 0.25f);
+        chorus.setCentreDelay(12.0f);
+    }
+    else if (mode == 1)
+    {
+        chorus.setRate(0.15f + motion * 0.35f);
+        chorus.setDepth(0.10f + motion * 0.15f);
+        chorus.setCentreDelay(8.0f);
+    }
+    else
+    {
+        chorus.setRate(0.7f + motion * 1.8f);
+        chorus.setDepth(0.45f + motion * 0.35f);
+        chorus.setCentreDelay(18.0f);
+    }
+
+    chorus.setFeedback(0.1f);
+    chorus.setMix(1.0f);
+
+    juce::dsp::AudioBlock<float> wetBlock(wetBuffer);
+    juce::dsp::ProcessContextReplacing<float> context(wetBlock);
+
+    chorus.process(context);
+    reverb.process(context);
+
+    const float delaySeconds =
+        mode == 0 ? 0.42f : (mode == 1 ? 0.62f : 0.28f);
+
+    delayLine.setDelay(
+        juce::jlimit(1.0f, 190000.0f,
+            static_cast<float>(currentSampleRate * delaySeconds)));
+
+    const float feedback = echo * (mode == 1 ? 0.55f : 0.40f);
+    const float effectCutoff = juce::jmap(filter, 1200.0f, 18000.0f);
+
+    for (int channel = 0; channel < numChannels; ++channel)
+    {
+        toneFilters[channel].coefficients =
+            juce::dsp::IIR::Coefficients<float>::makeLowPass(
+                currentSampleRate, effectCutoff);
+
+        auto* wet = wetBuffer.getWritePointer(channel);
+
+        for (int sample = 0; sample < numSamples; ++sample)
+        {
+            const float delayed = delayLine.popSample(channel);
+            const float input = wet[sample];
+
+            delayLine.pushSample(channel, input + delayed * feedback);
+
+            wet[sample] = input + delayed * echo;
+        }
+
+        juce::dsp::AudioBlock<float> channelBlock(
+            wetBuffer, channel, 0, numSamples);
+
+        juce::dsp::ProcessContextReplacing<float> filterContext(channelBlock);
+        toneFilters[channel].process(filterContext);
+    }
+
+    const float wetLevel = juce::jlimit(
+        0.0f, 1.0f, mix * (0.35f + dream * 0.65f));
+
+    for (int channel = 0; channel < numChannels; ++channel)
+    {
+        auto* output = buffer.getWritePointer(channel);
+        const auto* dry = dryBuffer.getReadPointer(channel);
+        const auto* wet = wetBuffer.getReadPointer(channel);
+
+        for (int sample = 0; sample < numSamples; ++sample)
+        {
+            output[sample] =
+                dry[sample] * (1.0f - wetLevel)
+                + wet[sample] * wetLevel;
+        }
+    }
+}
+(
     juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
