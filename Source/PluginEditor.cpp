@@ -51,7 +51,7 @@ KLUTCH11DREAMSCAPEAudioProcessorEditor(
     {
         audioProcessor.parameters.getParameter("MODE")
             ->setValueNotifyingHost(
-                modeSelector.getSelectedId() - 1.0f);
+               (modeSelector.getSelectedId() - 1.0f) / 2.0f);
     };
 
     addAndMakeVisible(modeSelector);
