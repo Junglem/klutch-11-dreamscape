@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <JuceHeader.h>
+#include <juce_audio_utils/juce_audio_utils.h>
 #include "PluginProcessor.h"
 
 class KLUTCH11DREAMSCAPEAudioProcessorEditor
