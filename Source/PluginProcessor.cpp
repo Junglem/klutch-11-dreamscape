@@ -79,7 +79,7 @@ void KLUTCH11DREAMSCAPEAudioProcessor::processBlock(
         return parameters.getRawParameterValue(id)->load();
     };
 
-    const int mode = static_cast<int>(getValue("MODE"));
+    const int mode = juce::roundToInt(getValue("MODE") * 2.0f);
     const float dream = getValue("DREAM");
     const float space = getValue("SPACE");
     const float shimmer = getValue("SHIMMER");
