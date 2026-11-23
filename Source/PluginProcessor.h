@@ -40,6 +40,15 @@ private:
     juce::dsp::Reverb reverb;
     juce::dsp::Chorus<float> chorus;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(KLUTCH11DREAMSCAPEAudioProcessor)
+    juce::dsp::DelayLine<float,
+        juce::dsp::DelayLineInterpolationTypes::Linear> delayLine { 192000 };
+
+    juce::dsp::IIR::Filter<float> toneFilters[2];
+
+    double currentSampleRate = 44100.0;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(
+        KLUTCH11DREAMSCAPEAudioProcessor)
 };
+
 
