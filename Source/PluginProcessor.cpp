@@ -40,9 +40,24 @@ KLUTCH11DREAMSCAPEAudioProcessor::createParameterLayout()
         "DECAY", "DECAY", NormalisableRange<float>(0.0f, 1.0f), 0.70f));
 
     layout.add(std::make_unique<AudioParameterFloat>(
-        "MIX", "MIX", NormalisableRange<float>(0.0f, 1.0f), 0.45f));
+    "MIX", "MIX", NormalisableRange<float>(0.0f, 1.0f), 0.45f));
 
-    return layout;
+layout.add(std::make_unique<AudioParameterFloat>(
+    "PITCH", "PITCH", NormalisableRange<float>(-12.0f, 12.0f), 0.0f));
+
+layout.add(std::make_unique<AudioParameterFloat>(
+    "ECHO", "ECHO", NormalisableRange<float>(0.0f, 1.0f), 0.35f));
+
+layout.add(std::make_unique<AudioParameterFloat>(
+    "FILTER", "FILTER", NormalisableRange<float>(0.0f, 1.0f), 0.5f));
+
+layout.add(std::make_unique<AudioParameterFloat>(
+    "MOTION", "MOTION", NormalisableRange<float>(0.0f, 1.0f), 0.4f));
+
+layout.add(std::make_unique<AudioParameterFloat>(
+    "GLIDE", "GLIDE", NormalisableRange<float>(0.0f, 1.0f), 0.3f));
+
+return layout;
 }
 
 void KLUTCH11DREAMSCAPEAudioProcessor::prepareToPlay(
